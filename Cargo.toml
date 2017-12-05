@@ -1,0 +1,6 @@
+[package]
+name = "burn"
+version = "0.1.0"
+authors = ["camhux <camzig@gmail.com>"]
+
+[dependencies]
