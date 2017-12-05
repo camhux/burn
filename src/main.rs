@@ -32,30 +32,25 @@ fn main() {
 }
 
 fn try_main() -> Result<()> {
-    let filepath = env::args().nth(1);
+    let filepath = get_filepath()?;
 
-    match filepath {
-        Some(path) => {
-            println!("noice, you want to burn {:?}", path);
-            match fs::File::open(path) {
-                Ok(ref mut file) => {
-                    println!("found an existing link");
-                    Ok(())
-                }
-                Err(_) => {
-                    Err(BurnError("failed to open file"))
-                }
-            }
+    println!("noice, you want to burn {:?}", filepath);
+    match fs::File::open(filepath) {
+        Ok(ref mut file) => {
+            println!("found an existing link");
+            Ok(())
         }
-        None => {
-            Err(BurnError("`burn` should be called with one path to a file to be burnt."))
+        Err(_) => {
+            Err(BurnError("failed to open file"))
         }
     }
 }
 
-fn check_argc() -> Result<()> {
-    match env::args().len() {
-        1 => Ok(()),
+fn get_filepath() -> Result<String> {
+    let mut args = env::args();
+
+    match args.len() {
+        2 => Ok(args.nth(1).unwrap()),
         _ => Err(BurnError("`burn` should be called with a single filepath."))
     }
 }
