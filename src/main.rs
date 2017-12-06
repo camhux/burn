@@ -1,8 +1,15 @@
+extern crate termion;
+
 use std::env;
 use std::error::Error;
 use std::fmt;
 use std::fs;
+use std::io::{self, Write};
+use std::io::prelude::*;
 use std::process;
+
+use termion::{clear, cursor};
+use termion::raw::IntoRawMode;
 
 #[derive(Debug)]
 struct BurnError(&'static str);
@@ -32,12 +39,31 @@ fn main() {
 }
 
 fn try_main() -> Result<()> {
+    let stdout = io::stdout();
+    let mut stdout = stdout.lock();
+    write!(stdout, "{}", clear::All).unwrap();
+
     let filepath = get_filepath()?;
 
     println!("noice, you want to burn {:?}", filepath);
     match fs::File::open(filepath) {
-        Ok(ref mut file) => {
-            println!("found an existing link");
+        Ok(mut file) => {
+            // println!("found an existing link");
+            // TODO: read x bytes of file where x = (term height • term width)
+            let termsize = termion::terminal_size().expect("could not read terminal size");
+            let bytes_to_read = (termsize.0 * termsize.1) as usize;
+
+            let mut buf: Vec<u8> = vec![0; bytes_to_read];
+
+            file.read(&mut buf).expect("failed to read file contents");
+
+            stdout.write(&buf).expect("failed to write to stdout");
+            stdout.write(b"wrote file contents").unwrap();
+            stdout.flush().unwrap();
+
+            // FIXME
+            std::thread::sleep(std::time::Duration::from_millis(1000));
+
             Ok(())
         }
         Err(_) => {
@@ -55,4 +81,14 @@ fn get_filepath() -> Result<String> {
     }
 }
 
-// fn get_valid_filepath() ->
+// TODO: this doesn't actually check whether the file can be unlinked in UNIX.
+// either remove this altogether and rely on OS exception or read parent dir permissions too
+fn check_can_unlink_file(file: fs::File) -> Result<()> {
+    let metadata = file.metadata().expect("failed to read file metadata");
+
+    if metadata.permissions().readonly() {
+        Err(BurnError("file lacks write permission"))
+    } else {
+        Ok(())
+    }
+}
