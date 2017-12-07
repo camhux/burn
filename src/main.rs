@@ -40,25 +40,30 @@ fn main() {
 
 fn try_main() -> Result<()> {
     let stdout = io::stdout();
-    let mut stdout = stdout.lock();
+    let mut stdout = stdout.lock().into_raw_mode().unwrap();
     write!(stdout, "{}", clear::All).unwrap();
 
     let filepath = get_filepath()?;
 
     println!("noice, you want to burn {:?}", filepath);
     match fs::File::open(filepath) {
-        Ok(mut file) => {
-            // println!("found an existing link");
-            // TODO: read x bytes of file where x = (term height • term width)
-            let termsize = termion::terminal_size().expect("could not read terminal size");
-            let bytes_to_read = (termsize.0 * termsize.1) as usize;
+        Ok(file) => {
+            let term_size = termion::terminal_size().expect("could not read terminal size");
+            let term_rows = term_size.1;
+            let grid_bytes = (term_size.0 * term_size.1) as usize;
 
-            let mut buf: Vec<u8> = vec![0; bytes_to_read];
+            let filebuf = io::BufReader::new(file);
 
-            file.read(&mut buf).expect("failed to read file contents");
+            let lines: Vec<Vec<u8>> = filebuf.lines()
+                .take(term_rows as usize)
+                .map(|maybe_line| maybe_line.map(|line| line.into_bytes()).unwrap())
+                .collect();
 
-            stdout.write(&buf).expect("failed to write to stdout");
-            stdout.write(b"wrote file contents").unwrap();
+            stdout.write(b"\r").unwrap();
+            for line in lines {
+                stdout.write(&line).expect("failed to write line to stdout");
+                stdout.write(b"\r\n").unwrap();
+            }
             stdout.flush().unwrap();
 
             // FIXME
