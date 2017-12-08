@@ -1,3 +1,4 @@
+extern crate rand;
 extern crate termion;
 
 use std::env;
@@ -11,6 +12,7 @@ use std::process;
 use termion::raw::IntoRawMode;
 
 mod ui;
+mod state;
 
 use ui::Ui;
 
