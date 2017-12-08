@@ -4,12 +4,15 @@ use std::env;
 use std::error::Error;
 use std::fmt;
 use std::fs;
-use std::io::{self, Write};
+use std::io;
 use std::io::prelude::*;
 use std::process;
 
-use termion::{clear, cursor};
 use termion::raw::IntoRawMode;
+
+mod ui;
+
+use ui::Ui;
 
 #[derive(Debug)]
 struct BurnError(&'static str);
@@ -40,12 +43,10 @@ fn main() {
 
 fn try_main() -> Result<()> {
     let stdout = io::stdout();
-    let mut stdout = stdout.lock().into_raw_mode().unwrap();
-    write!(stdout, "{}", clear::All).unwrap();
+    let stdout = stdout.lock().into_raw_mode().unwrap();
 
     let filepath = get_filepath()?;
 
-    println!("noice, you want to burn {:?}", filepath);
     match fs::File::open(filepath) {
         Ok(file) => {
             let term_size = termion::terminal_size().expect("could not read terminal size");
@@ -59,12 +60,9 @@ fn try_main() -> Result<()> {
                 .map(|maybe_line| maybe_line.map(|line| line.into_bytes()).unwrap())
                 .collect();
 
-            stdout.write(b"\r").unwrap();
-            for line in lines {
-                stdout.write(&line).expect("failed to write line to stdout");
-                stdout.write(b"\r\n").unwrap();
-            }
-            stdout.flush().unwrap();
+            let mut ui = Ui::create(stdout, lines);
+
+            ui.draw();
 
             // FIXME
             std::thread::sleep(std::time::Duration::from_millis(1000));
