@@ -46,9 +46,9 @@ mod tests {
 
         fire_layer.set_fire();
 
-        let mut last_row = (&mut fire_layer.features).into_iter().last().unwrap();
+        let last_row: &mut Vec<Option<u8>> = (&mut fire_layer.features).into_iter().last().unwrap();
 
-        let fire_cell_count = (&mut last_row).into_iter().fold(0, |acc, &mut cell| match cell { Some(_) => acc + 1, None => acc });
+        let fire_cell_count = last_row.into_iter().fold(0, |acc, &mut cell| match cell { Some(_) => acc + 1, None => acc });
 
         assert_eq!(fire_cell_count, 1);
     }
