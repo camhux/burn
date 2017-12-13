@@ -11,8 +11,9 @@ use std::process;
 
 use termion::raw::IntoRawMode;
 
-mod ui;
+mod layers;
 mod state;
+mod ui;
 
 use ui::Ui;
 
@@ -63,11 +64,18 @@ fn try_main() -> Result<()> {
                 .collect();
 
             let mut ui = Ui::create(stdout, lines);
+            let mut state = state::FireState::new(term_size.0 as usize, term_size.1 as usize);
+
+            state.start_fire();
 
             ui.draw();
 
-            // FIXME
-            std::thread::sleep(std::time::Duration::from_millis(1000));
+            while !state.is_saturated() {
+                state = state.get_next();
+                ui.draw();
+                // TODO: do this better and configure duration with a more obvious constant
+                std::thread::sleep(std::time::Duration::from_millis(300));
+            }
 
             Ok(())
         }

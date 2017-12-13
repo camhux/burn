@@ -38,20 +38,23 @@ impl Neighbors {
 }
 
 #[derive(Clone)]
-pub struct FireLayer {
+pub struct FireState {
     pub rows: usize,
     pub cols: usize,
     pub features: Vec<Vec<FireCell>>,
+    pub n_fires: usize,
 }
 
-impl FireLayer {
-    pub fn new(rows: usize, cols: usize) -> Self {
+impl FireState {
+    // (camhux): (cols, rows) order matches termion::get_terminal_size return type
+    pub fn new(cols: usize, rows: usize) -> Self {
         let features = vec![vec![None; cols]; rows];
 
-        return FireLayer {
+        return Self {
             rows,
             cols,
             features,
+            n_fires: 0,
         };
     }
 
@@ -60,6 +63,7 @@ impl FireLayer {
         let glyph = FIRE_GLYPHS[rand::random::<usize>() % FIRE_GLYPHS.len()];
 
         self.features[row][col] = Some(glyph);
+        self.n_fires += 1;
     }
 
     pub fn start_fire(&mut self) {
@@ -103,20 +107,24 @@ impl FireLayer {
             left: if col == 0 { None } else { self.features[row][col - 1] },
         }
     }
+
+    pub fn is_saturated(&self) -> bool {
+        (self.n_fires as f64 / (self.rows * self.cols) as f64) > 0.9f64
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::FireLayer;
+    use super::FireState;
     use super::FireCell;
 
     #[test]
     fn test_start_fire() {
-        let mut fire_layer = FireLayer::new(3, 3);
+        let mut fire_state = FireState::new(3, 3);
 
-        fire_layer.start_fire();
+        fire_state.start_fire();
 
-        let last_row: &mut Vec<FireCell> = (&mut fire_layer.features).into_iter().last().unwrap();
+        let last_row: &mut Vec<FireCell> = (&mut fire_state.features).into_iter().last().unwrap();
 
         let fire_cell_count = last_row.into_iter().fold(0, |acc, &mut cell| match cell { Some(_) => acc + 1, None => acc });
 

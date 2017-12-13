@@ -10,7 +10,6 @@ const LINE_END: &[u8] = b"\r\n";
 pub struct Ui<W: Write> {
   writer: W,
   field: Field,
-//   state: State TODO: Impl
 }
 
 impl<W: Write> Ui<W> {
