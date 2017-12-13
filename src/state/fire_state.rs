@@ -1,4 +1,5 @@
 use rand;
+use layers::Layerable;
 
 const FIRE_GLYPHS: &[u8] = &[
     b'\x25', // %
@@ -9,7 +10,29 @@ const FIRE_GLYPHS: &[u8] = &[
     b'^',
 ];
 
-type FireCell = Option<u8>;
+const ASH_GLYPHS: &[u8] = &[
+    b'.',
+    b';',
+    b'x',
+];
+
+#[derive(Copy, Clone)]
+enum FireCell {
+    Unlit,
+    Lit { glyph: u8, ttl: usize },
+    Extinguished { glyph: u8 },
+}
+
+impl From<FireCell> for Option<u8> {
+    fn from(fire_cell: FireCell) -> Self {
+        use self::FireCell::{Unlit, Lit, Extinguished};
+
+        match fire_cell {
+            Unlit => None,
+            Lit { glyph, .. } | Extinguished { glyph } => Some(glyph),
+        }
+    }
+}
 
 struct Neighbors {
     row: usize,
@@ -23,13 +46,7 @@ struct Neighbors {
 
 impl Neighbors {
     fn n_fires(&self) -> usize {
-        let mut count = 0;
-
-        for neighbor in [self.top, self.right, self.bottom, self.left].into_iter() {
-            if neighbor.is_some() { count += 1 }
-        }
-
-        count
+        [self.top, self.right, self.bottom, self.left].into_iter().map(|cell| if let &FireCell::Lit {..} = cell { true } else { false }).count()
     }
 
     fn fire_in_neighborhood(&self) -> bool {
@@ -39,16 +56,16 @@ impl Neighbors {
 
 #[derive(Clone)]
 pub struct FireState {
-    pub rows: usize,
-    pub cols: usize,
-    pub features: Vec<Vec<FireCell>>,
-    pub n_fires: usize,
+    rows: usize,
+    cols: usize,
+    features: Vec<Vec<FireCell>>,
+    n_fires: usize,
 }
 
 impl FireState {
     // (camhux): (cols, rows) order matches termion::get_terminal_size return type
     pub fn new(cols: usize, rows: usize) -> Self {
-        let features = vec![vec![None; cols]; rows];
+        let features = vec![vec![FireCell::Unlit; cols]; rows];
 
         return Self {
             rows,
@@ -62,7 +79,8 @@ impl FireState {
         // TODO: replace with a call to thread-local RNG's `gen_range` method. Probably more efficient
         let glyph = FIRE_GLYPHS[rand::random::<usize>() % FIRE_GLYPHS.len()];
 
-        self.features[row][col] = Some(glyph);
+        // TODO: tweak/iterate on ttl, possibly extract into constant for maintenance
+        self.features[row][col] = FireCell::Lit { glyph, ttl: 10 };
         self.n_fires += 1;
     }
 
@@ -97,19 +115,32 @@ impl FireState {
     }
 
     fn get_neighbors(&self, row: usize, col: usize) -> Neighbors {
+        use self::FireCell::Unlit;
+
         Neighbors {
             row,
             col,
-
-            top: if row == 0 { None } else { self.features[row - 1][col] },
-            right: if col + 1 == self.cols { None } else { self.features[row][col + 1] },
-            bottom: if row + 1 == self.rows { None } else { self.features[row + 1][col] },
-            left: if col == 0 { None } else { self.features[row][col - 1] },
+            // no consequence for modeling "out-of-bounds" neighbors as `Unlit`;
+            // we just need to know if there are any real neighbors on fire
+            top: if row == 0 { Unlit } else { self.features[row - 1][col] },
+            right: if col + 1 == self.cols { Unlit } else { self.features[row][col + 1] },
+            bottom: if row + 1 == self.rows { Unlit } else { self.features[row + 1][col] },
+            left: if col == 0 { Unlit } else { self.features[row][col - 1] },
         }
     }
 
     pub fn is_saturated(&self) -> bool {
-        (self.n_fires as f64 / (self.rows * self.cols) as f64) > 0.9f64
+        (self.n_fires as f64 / (self.rows * self.cols) as f64) > 0.8f64
+    }
+}
+
+impl Layerable for FireState {
+    type E = FireCell;
+
+    fn rows(&self) -> usize { self.rows }
+    fn cols(&self) -> usize { self.cols }
+    fn features(&self) -> &Vec<Vec<Self::E>> {
+        &self.features
     }
 }
 

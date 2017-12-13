@@ -1,13 +1,13 @@
 use state::FireState;
 
 pub trait Layerable {
-    type E: Copy;
+    type E: Copy + Into<Option<u8>>;
 
     fn rows(&self) -> usize;
     fn cols(&self) -> usize;
     fn features(&self) -> &Vec<Vec<Self::E>>;
 
-    fn get(&self, row_ix: usize, col_ix: usize) -> Option<Self::E> {
+    fn get(&self, row_ix: usize, col_ix: usize) -> Option<u8> {
         assert!(row_ix < self.rows());
         assert!(col_ix < self.cols());
 
@@ -22,24 +22,23 @@ pub trait Layerable {
         }
 
         let elt = row[col_ix];
-        return Some(elt);
+        return elt.into();
     }
 }
 
 pub struct BasicLayer {
     rows: usize,
     cols: usize,
-    byte_vec: Vec<Vec<u8>>,
+    byte_vec: Vec<Vec<Option<u8>>>,
 }
 
 impl Layerable for BasicLayer {
-    type E = u8;
+    type E = Option<u8>;
 
     fn rows(&self) -> usize { self.rows }
     fn cols(&self) -> usize { self.cols }
-    fn features(&self) -> &Vec<Vec<u8>> { &self.byte_vec }
+    fn features(&self) -> &Vec<Vec<Self::E>> { &self.byte_vec }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -48,9 +47,9 @@ mod tests {
 
     #[test]
     pub fn test_get() {
-        let byte_vec: Vec<Vec<u8>> = vec![
-            b"bonjour".to_vec(),
-            b"allo".to_vec(),
+        let byte_vec: Vec<Vec<Option<u8>>> = vec![
+            b"bonjour".map(|&x| Some(x)).collect(),
+            b"allo".map(|&x| Some(x)).collect(),
         ];
 
         let layer = BasicLayer {
