@@ -95,19 +95,36 @@ impl FireState {
     pub fn get_next(&self) -> Self {
         let mut next = self.clone();
 
-        for i in 0..self.rows {
-            for j in 0..self.cols {
-                let neighbors = self.get_neighbors(i, j);
+        for (i, row) in (&self.features).into_iter().enumerate() {
+            for (j, cell) in row.into_iter().enumerate() {
+                use self::FireCell::{Unlit, Lit, Extinguished};
 
-                let mut tries = neighbors.n_fires();
-                let mut should_combust = false;
+                // TODO: return *next state for cell* from this match and assign to `next[i][j]` only once instead of burying the mutations in branches
+                match *cell {
+                    // give cell the opportunity to combust; may not due to randomness
+                    Unlit => {
+                        let neighbors = self.get_neighbors(i, j);
 
-                while tries > 0 && !should_combust {
-                    tries -= 1;
-                    should_combust = rand::random();
+                        let mut tries = neighbors.n_fires();
+                        let mut should_combust = false;
+
+                        while tries > 0 && !should_combust {
+                            tries -= 1;
+                            should_combust = rand::random();
+                        }
+
+                        if should_combust { next.set_cell_fire(i, j) }
+                    },
+                    Lit { glyph, ttl } => {
+                        if ttl < 1 {
+                            let glyph = ASH_GLYPHS[rand::random::<usize>() % ASH_GLYPHS.len()];
+                            next.features[i][j] = Extinguished { glyph };
+                        } else {
+                            next.features[i][j] = Lit { glyph, ttl: ttl - 1 };
+                        }
+                    },
+                    _ => {},
                 }
-
-                if should_combust { next.set_cell_fire(i, j) }
             }
         }
 
