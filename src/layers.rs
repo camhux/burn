@@ -40,6 +40,28 @@ impl Layerable for BasicLayer {
     fn features(&self) -> &Vec<Vec<Self::E>> { &self.byte_vec }
 }
 
+pub struct Compositor {
+    pub rows: usize,
+    pub cols: usize,
+}
+
+impl Compositor {
+    /// composite produces a single field of bytes based on the presence of bytes at each index in each of the `layers`.
+    /// Layers in `layers` should be ordered by ascending precedence (i.e., bottom layers first).
+    pub fn composite(&self, layers: &[&Layerable]) -> Vec<Vec<u8>> {
+        let mut field = vec![vec![b' '; self.cols]; self.rows];
+
+        for (i, j) in (0..self.rows).zip(0..self.cols) {
+            let comped: Option<u8> = layers.into_iter().rev().fold(None, |acc, layer| acc.or(layer.get(i, j)));
+            if let Some(glyph) = comped {
+                field[i][j] = glyph;
+            }
+        }
+
+        field
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::BasicLayer;
