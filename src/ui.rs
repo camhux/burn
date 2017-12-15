@@ -9,14 +9,12 @@ const LINE_END: &[u8] = b"\r\n";
 // TODO: move terminal size info into here?
 pub struct Ui<W: Write> {
   writer: W,
-  field: Field,
 }
 
 impl<W: Write> Ui<W> {
-    pub fn create<T: Into<Field>>(writer: W, field: T) -> Self {
+    pub fn create(writer: W) -> Self {
         let mut ui = Ui {
             writer: writer,
-            field: field.into(),
         };
 
         ui.setup_window();
@@ -32,11 +30,11 @@ impl<W: Write> Ui<W> {
         write!(self.writer, "{}", cursor::Show).unwrap();
     }
 
-    pub fn draw(&mut self) {
+    pub fn draw(&mut self, field: &Field) {
         write!(self.writer, "{}", cursor::Goto(1, 1)).unwrap();
 
         // TODO: composite the features onto the field
-        for line in &self.field {
+        for line in field {
             self.writer.write(&line).expect("failed to write line");
             self.writer.write(LINE_END).unwrap();
         }

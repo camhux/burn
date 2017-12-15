@@ -63,8 +63,7 @@ pub struct FireState {
 }
 
 impl FireState {
-    // (camhux): (cols, rows) order matches termion::get_terminal_size return type
-    pub fn new(cols: usize, rows: usize) -> Self {
+    pub fn new(rows: usize, cols: usize) -> Self {
         let features = vec![vec![FireCell::Unlit; cols]; rows];
 
         return Self {
@@ -148,6 +147,10 @@ impl FireState {
 
     pub fn is_saturated(&self) -> bool {
         (self.n_fires as f64 / (self.rows * self.cols) as f64) > 0.8f64
+    }
+
+    pub fn as_layer(&self) -> FireLayer {
+        self.into()
     }
 }
 

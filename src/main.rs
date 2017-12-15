@@ -15,6 +15,8 @@ mod layers;
 mod state;
 mod ui;
 
+use layers::{BasicLayer, Compositor, Layerable};
+use state::{FireState, FireLayer};
 use ui::Ui;
 
 #[derive(Debug)]
@@ -52,27 +54,38 @@ fn try_main() -> Result<()> {
 
     match fs::File::open(filepath) {
         Ok(file) => {
-            let term_size = termion::terminal_size().expect("could not read terminal size");
-            let term_rows = term_size.1;
-            let grid_bytes = (term_size.0 * term_size.1) as usize;
+            let (term_cols, term_rows) = termion::terminal_size().expect("could not read terminal size");
+            let (term_cols, term_rows) = (term_cols as usize, term_rows as usize);
 
             let filebuf = io::BufReader::new(file);
 
-            let lines: Vec<Vec<u8>> = filebuf.lines()
-                .take(term_rows as usize)
+            let file_lines: Vec<Vec<u8>> = filebuf.lines()
+                .take(term_rows)
                 .map(|maybe_line| maybe_line.map(|line| line.into_bytes()).unwrap())
                 .collect();
 
-            let mut ui = Ui::create(stdout, lines);
-            let mut state = state::FireState::new(term_size.0 as usize, term_size.1 as usize);
+            let compositor = Compositor {
+                rows: term_rows,
+                cols: term_cols,
+            };
+
+            let base_layer = BasicLayer::create(
+                term_rows,
+                term_cols,
+                file_lines.into_iter().map(|row| row.into_iter().map(|byte| byte.into()).collect()).collect(),
+            );
+
+            let mut ui = Ui::create(stdout);
+            let mut state = state::FireState::new(term_rows, term_cols);
 
             state.start_fire();
 
-            ui.draw();
+            // TODO: yuck. Make this expression nicer, maybe allow composing the compositor into the ui from the get-go
+            ui.draw(&compositor.composite(&[&base_layer, &(state.as_layer())]));
 
             while !state.is_saturated() {
                 state = state.get_next();
-                ui.draw();
+                ui.draw(&compositor.composite(&[&base_layer, &(state.as_layer())]));
                 // TODO: do this better and configure duration with a more obvious constant
                 std::thread::sleep(std::time::Duration::from_millis(300));
             }

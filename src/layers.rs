@@ -27,13 +27,23 @@ pub trait Layerable {
 pub struct BasicLayer {
     rows: usize,
     cols: usize,
-    byte_vec: Vec<Vec<Option<u8>>>,
+    features: Vec<Vec<Option<u8>>>,
+}
+
+impl BasicLayer {
+    pub fn create(rows: usize, cols: usize, features: Vec<Vec<Option<u8>>>) -> Self {
+        BasicLayer {
+            rows,
+            cols,
+            features,
+        }
+    }
 }
 
 impl Layerable for BasicLayer {
     fn rows(&self) -> usize { self.rows }
     fn cols(&self) -> usize { self.cols }
-    fn features(&self) -> &Vec<Vec<Option<u8>>> { &self.byte_vec }
+    fn features(&self) -> &Vec<Vec<Option<u8>>> { &self.features }
 }
 
 pub struct Compositor {
@@ -65,13 +75,13 @@ mod tests {
 
     #[test]
     pub fn test_get() {
-        let byte_vec: Vec<Vec<Option<u8>>> = vec![
+        let features: Vec<Vec<Option<u8>>> = vec![
             b"bonjour".map(|&x| Some(x)).collect(),
             b"allo".map(|&x| Some(x)).collect(),
         ];
 
         let layer = BasicLayer {
-            byte_vec,
+            features,
             rows: 3,
             cols: 7,
         };
