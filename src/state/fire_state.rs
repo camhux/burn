@@ -151,13 +151,31 @@ impl FireState {
     }
 }
 
-impl Layerable for FireState {
-    type E = FireCell;
+pub struct FireLayer {
+    rows: usize,
+    cols: usize,
+    features: Vec<Vec<Option<u8>>>
+}
 
+impl Layerable for FireLayer {
     fn rows(&self) -> usize { self.rows }
     fn cols(&self) -> usize { self.cols }
-    fn features(&self) -> &Vec<Vec<Self::E>> {
-        &self.features
+    fn features(&self) -> &Vec<Vec<Option<u8>>> { &self.features }
+}
+
+impl<'a> From<&'a FireState> for FireLayer {
+    fn from(fire_state: &'a FireState) -> Self {
+        let features: Vec<Vec<Option<u8>>> = (&fire_state.features).into_iter()
+            .map(|row| {
+                row.into_iter().map(|&cell| cell.into()).collect::<Vec<Option<u8>>>()
+            })
+            .collect::<Vec<_>>();
+
+        FireLayer {
+            features,
+            rows: fire_state.rows,
+            cols: fire_state.cols,
+        }
     }
 }
 

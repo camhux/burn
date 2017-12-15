@@ -1,11 +1,9 @@
 use state::FireState;
 
 pub trait Layerable {
-    type E: Copy + Into<Option<u8>>;
-
     fn rows(&self) -> usize;
     fn cols(&self) -> usize;
-    fn features(&self) -> &Vec<Vec<Self::E>>;
+    fn features(&self) -> &Vec<Vec<Option<u8>>>;
 
     fn get(&self, row_ix: usize, col_ix: usize) -> Option<u8> {
         assert!(row_ix < self.rows());
@@ -22,7 +20,7 @@ pub trait Layerable {
         }
 
         let elt = row[col_ix];
-        return elt.into();
+        return elt;
     }
 }
 
@@ -33,11 +31,9 @@ pub struct BasicLayer {
 }
 
 impl Layerable for BasicLayer {
-    type E = Option<u8>;
-
     fn rows(&self) -> usize { self.rows }
     fn cols(&self) -> usize { self.cols }
-    fn features(&self) -> &Vec<Vec<Self::E>> { &self.byte_vec }
+    fn features(&self) -> &Vec<Vec<Option<u8>>> { &self.byte_vec }
 }
 
 pub struct Compositor {
