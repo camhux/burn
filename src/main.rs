@@ -87,7 +87,8 @@ fn try_main() -> Result<()> {
                 state = state.get_next();
                 ui.draw(&compositor.composite(&[&base_layer, &(state.as_layer())]));
                 // TODO: do this better and configure duration with a more obvious constant
-                std::thread::sleep(std::time::Duration::from_millis(300));
+                std::thread::sleep(std::time::Duration::from_millis(200));
+                println!("loop iterated");
             }
 
             Ok(())

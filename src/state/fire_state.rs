@@ -46,7 +46,7 @@ struct Neighbors {
 
 impl Neighbors {
     fn n_fires(&self) -> usize {
-        [self.top, self.right, self.bottom, self.left].into_iter().map(|cell| if let &FireCell::Lit {..} = cell { true } else { false }).count()
+        [self.top, self.right, self.bottom, self.left].into_iter().filter(|&&cell| if let FireCell::Lit {..} = cell { true } else { false }).count()
     }
 
     fn fire_in_neighborhood(&self) -> bool {
