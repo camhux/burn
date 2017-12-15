@@ -48,14 +48,14 @@ fn main() {
 
 fn try_main() -> Result<()> {
     let stdout = io::stdout();
-    let stdout = stdout.lock().into_raw_mode().unwrap();
+    let stdout = stdout.lock(); //.into_raw_mode().unwrap();
 
     let filepath = get_filepath()?;
 
     match fs::File::open(filepath) {
         Ok(file) => {
             let (term_cols, term_rows) = termion::terminal_size().expect("could not read terminal size");
-            let (term_cols, term_rows) = (term_cols as usize, term_rows as usize);
+            let (term_cols, term_rows) = ((term_cols - 2) as usize, (term_rows - 2) as usize);
 
             let filebuf = io::BufReader::new(file);
 
@@ -87,8 +87,7 @@ fn try_main() -> Result<()> {
                 state = state.get_next();
                 ui.draw(&compositor.composite(&[&base_layer, &(state.as_layer())]));
                 // TODO: do this better and configure duration with a more obvious constant
-                std::thread::sleep(std::time::Duration::from_millis(200));
-                println!("loop iterated");
+                std::thread::sleep(std::time::Duration::from_millis(80));
             }
 
             Ok(())

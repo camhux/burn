@@ -12,8 +12,12 @@ const FIRE_GLYPHS: &[u8] = &[
 
 const ASH_GLYPHS: &[u8] = &[
     b'.',
-    b';',
-    b'x',
+    b' ',
+    b' ',
+    b' ',
+    b' ',
+    b' ',
+    b' ',
 ];
 
 #[derive(Copy, Clone)]
@@ -146,7 +150,7 @@ impl FireState {
     }
 
     pub fn is_saturated(&self) -> bool {
-        (self.n_fires as f64 / (self.rows * self.cols) as f64) > 0.8f64
+        (self.n_fires as f64 / (self.rows * self.cols) as f64) > 0.99f64
     }
 
     pub fn as_layer(&self) -> FireLayer {
