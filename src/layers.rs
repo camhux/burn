@@ -3,9 +3,9 @@ use state::FireState;
 pub trait Layerable {
     fn rows(&self) -> usize;
     fn cols(&self) -> usize;
-    fn features(&self) -> &Vec<Vec<Option<u8>>>;
+    fn features(&self) -> &Vec<Vec<Option<String>>>;
 
-    fn get(&self, row_ix: usize, col_ix: usize) -> Option<u8> {
+    fn get(&self, row_ix: usize, col_ix: usize) -> Option<String> {
         assert!(row_ix < self.rows());
         assert!(col_ix < self.cols());
 
@@ -19,7 +19,7 @@ pub trait Layerable {
             return None;
         }
 
-        let elt = row[col_ix];
+        let elt = row[col_ix].clone();
         return elt;
     }
 }
@@ -27,11 +27,11 @@ pub trait Layerable {
 pub struct BasicLayer {
     rows: usize,
     cols: usize,
-    features: Vec<Vec<Option<u8>>>,
+    features: Vec<Vec<Option<String>>>,
 }
 
 impl BasicLayer {
-    pub fn create(rows: usize, cols: usize, features: Vec<Vec<Option<u8>>>) -> Self {
+    pub fn create(rows: usize, cols: usize, features: Vec<Vec<Option<String>>>) -> Self {
         BasicLayer {
             rows,
             cols,
@@ -43,7 +43,9 @@ impl BasicLayer {
 impl Layerable for BasicLayer {
     fn rows(&self) -> usize { self.rows }
     fn cols(&self) -> usize { self.cols }
-    fn features(&self) -> &Vec<Vec<Option<u8>>> { &self.features }
+    fn features(&self) -> &Vec<Vec<Option<String>>> {
+        &self.features
+    }
 }
 
 pub struct Compositor {
@@ -55,18 +57,22 @@ impl Compositor {
     /// composite produces a single field of bytes based on the presence of bytes at each index in each of the `layers`.
     /// Layers in `layers` should be ordered by ascending precedence (i.e., bottom layers first).
     pub fn composite(&self, layers: &[&Layerable]) -> Vec<Vec<u8>> {
-        let mut field = vec![vec![b' '; self.cols]; self.rows];
+        let mut field = vec![vec![" ".to_string(); self.cols]; self.rows];
 
         for i in 0..self.rows {
             for j in 0..self.cols {
-                let comped: Option<u8> = layers.into_iter().rev().fold(None, |acc, layer| acc.or(layer.get(i, j)));
-                if let Some(glyph) = comped {
-                    field[i][j] = glyph;
+                let comped: Option<String> = layers.into_iter().rev().fold(None, |acc, layer| acc.or(layer.get(i, j)));
+                if let Some(string) = comped {
+                    field[i][j] = string;
                 }
             }
         }
 
-        field
+        let byte_field: Vec<Vec<u8>> = field.into_iter().map(|row| {
+            row.into_iter().flat_map(|s| s.into_bytes().into_iter()).collect()
+        }).collect();
+
+        byte_field
     }
 }
 

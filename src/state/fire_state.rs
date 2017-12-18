@@ -1,39 +1,45 @@
 use rand;
 use layers::Layerable;
+use termion::color;
 
-const FIRE_GLYPHS: &[u8] = &[
-    b'\x25', // %
-    b'\x2A', // *
-    b'\x2C', // ,
-    b'W',
-    b'Y',
-    b'^',
+const FIRE_GLYPHS: &[char] = &[
+    '\x25', // %
+    '\x2A', // *
+    '\x2C', // ,
+    'W',
+    'Y',
+    '^',
 ];
 
-const ASH_GLYPHS: &[u8] = &[
-    b'.',
-    b' ',
-    b' ',
-    b' ',
-    b' ',
-    b' ',
-    b' ',
+const ASH_GLYPHS: &[char] = &[
+    '.',
+    ' ',
+    ' ',
+    ' ',
+    ' ',
+    ' ',
+    ' ',
 ];
 
 #[derive(Copy, Clone)]
 enum FireCell {
     Unlit,
-    Lit { glyph: u8, ttl: usize },
-    Extinguished { glyph: u8 },
+    Lit { ttl: usize },
+    Extinguished { glyph: char },
 }
 
-impl From<FireCell> for Option<u8> {
+impl From<FireCell> for Option<String> {
     fn from(fire_cell: FireCell) -> Self {
         use self::FireCell::{Unlit, Lit, Extinguished};
 
         match fire_cell {
             Unlit => None,
-            Lit { glyph, .. } | Extinguished { glyph } => Some(glyph),
+            Lit {..} => {
+                // TODO: replace with a call to thread-local RNG's `gen_range` method. Probably more efficient
+                let glyph = FIRE_GLYPHS[rand::random::<usize>() % FIRE_GLYPHS.len()];
+                Some(format!("{}{}{}", color::Fg(color::Rgb(255, 0, 0)), glyph, color::Fg(color::Reset)))
+            },
+            Extinguished { glyph } => Some(format!("{}{}{}", color::Fg(color::Rgb(100, 100, 100)), glyph, color::Fg(color::Reset))),
         }
     }
 }
@@ -79,11 +85,8 @@ impl FireState {
     }
 
     fn set_cell_fire(&mut self, row: usize, col: usize) {
-        // TODO: replace with a call to thread-local RNG's `gen_range` method. Probably more efficient
-        let glyph = FIRE_GLYPHS[rand::random::<usize>() % FIRE_GLYPHS.len()];
-
         // TODO: tweak/iterate on ttl, possibly extract into constant for maintenance
-        self.features[row][col] = FireCell::Lit { glyph, ttl: 10 };
+        self.features[row][col] = FireCell::Lit { ttl: 10 };
         self.n_fires += 1;
     }
 
@@ -118,12 +121,12 @@ impl FireState {
 
                         if should_combust { next.set_cell_fire(i, j) }
                     },
-                    Lit { glyph, ttl } => {
+                    Lit { ttl } => {
                         if ttl < 1 {
                             let glyph = ASH_GLYPHS[rand::random::<usize>() % ASH_GLYPHS.len()];
                             next.features[i][j] = Extinguished { glyph };
                         } else {
-                            next.features[i][j] = Lit { glyph, ttl: ttl - 1 };
+                            next.features[i][j] = Lit { ttl: ttl - 1 };
                         }
                     },
                     _ => {},
@@ -140,7 +143,7 @@ impl FireState {
         Neighbors {
             row,
             col,
-            // no consequence for modeling "out-of-bounds" neighbors as `Unlit`;
+            // no consequence for modeling 'out-of-bounds' neighbors as `Unlit`;
             // we just need to know if there are any real neighbors on fire
             top: if row == 0 { Unlit } else { self.features[row - 1][col] },
             right: if col + 1 == self.cols { Unlit } else { self.features[row][col + 1] },
@@ -161,20 +164,20 @@ impl FireState {
 pub struct FireLayer {
     rows: usize,
     cols: usize,
-    features: Vec<Vec<Option<u8>>>
+    features: Vec<Vec<Option<String>>>
 }
 
 impl Layerable for FireLayer {
     fn rows(&self) -> usize { self.rows }
     fn cols(&self) -> usize { self.cols }
-    fn features(&self) -> &Vec<Vec<Option<u8>>> { &self.features }
+    fn features(&self) -> &Vec<Vec<Option<String>>> { &self.features }
 }
 
 impl<'a> From<&'a FireState> for FireLayer {
     fn from(fire_state: &'a FireState) -> Self {
-        let features: Vec<Vec<Option<u8>>> = (&fire_state.features).into_iter()
+        let features: Vec<Vec<Option<String>>> = (&fire_state.features).into_iter()
             .map(|row| {
-                row.into_iter().map(|&cell| cell.into()).collect::<Vec<Option<u8>>>()
+                row.into_iter().map(|&cell| cell.into()).collect::<Vec<Option<String>>>()
             })
             .collect::<Vec<_>>();
 

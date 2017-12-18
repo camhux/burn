@@ -72,7 +72,7 @@ fn try_main() -> Result<()> {
             let base_layer = BasicLayer::create(
                 term_rows,
                 term_cols,
-                file_lines.into_iter().map(|row| row.into_iter().map(|byte| byte.into()).collect()).collect(),
+                file_lines.into_iter().map(|row| row.into_iter().map(|byte| format!("{}", byte as char).into()).collect()).collect(),
             );
 
             let mut ui = Ui::create(stdout);
