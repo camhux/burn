@@ -33,7 +33,6 @@ impl<W: Write> Ui<W> {
     pub fn draw(&mut self, field: &Field) {
         write!(self.writer, "{}", cursor::Goto(1, 1)).unwrap();
 
-        // TODO: composite the features onto the field
         for line in field {
             self.writer.write(&line).expect("failed to write line");
             self.writer.write(LINE_END).unwrap();
