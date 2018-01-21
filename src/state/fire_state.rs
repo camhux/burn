@@ -1,4 +1,5 @@
-use rand;
+use rand::{self, Rng};
+use rand::distributions::IndependentSample;
 use layers::Layerable;
 use termion::color;
 
@@ -21,6 +22,14 @@ const ASH_GLYPHS: &[char] = &[
     ' ',
 ];
 
+const FIRE_COLORS: &[color::Rgb] = &[
+    color::Rgb(232, 81, 44),
+    color::Rgb(198, 46, 7),
+    color::Rgb(247, 39, 67),
+    color::Rgb(255, 134, 5),
+    color::Rgb(255, 72, 48),
+];
+
 #[derive(Copy, Clone)]
 enum FireCell {
     Unlit,
@@ -32,12 +41,15 @@ impl From<FireCell> for Option<String> {
     fn from(fire_cell: FireCell) -> Self {
         use self::FireCell::{Unlit, Lit, Extinguished};
 
+        let mut rng = rand::thread_rng();
+
         match fire_cell {
             Unlit => None,
             Lit {..} => {
-                // TODO: replace with a call to thread-local RNG's `gen_range` method. Probably more efficient
-                let glyph = FIRE_GLYPHS[rand::random::<usize>() % FIRE_GLYPHS.len()];
-                Some(format!("{}{}{}", color::Fg(color::Rgb(255, 0, 0)), glyph, color::Fg(color::Reset)))
+                let glyph = *(rng.choose(FIRE_GLYPHS).unwrap());
+                let fire_color = *(rng.choose(FIRE_COLORS).unwrap());
+
+                Some(format!("{}{}{}", color::Fg(fire_color), glyph, color::Fg(color::Reset)))
             },
             Extinguished { glyph } => Some(format!("{}{}{}", color::Fg(color::Rgb(100, 100, 100)), glyph, color::Fg(color::Reset))),
         }
@@ -70,6 +82,7 @@ pub struct FireState {
     cols: usize,
     features: Vec<Vec<FireCell>>,
     n_fires: usize,
+    ttl_range: rand::distributions::Range<usize>,
 }
 
 impl FireState {
@@ -81,12 +94,14 @@ impl FireState {
             cols,
             features,
             n_fires: 0,
+            ttl_range: rand::distributions::Range::new(3, 26),
         };
     }
 
     fn set_cell_fire(&mut self, row: usize, col: usize) {
         // TODO: tweak/iterate on ttl, possibly extract into constant for maintenance
-        self.features[row][col] = FireCell::Lit { ttl: 10 };
+        let ttl = self.ttl_range.ind_sample(&mut rand::thread_rng());
+        self.features[row][col] = FireCell::Lit { ttl };
         self.n_fires += 1;
     }
 
@@ -116,14 +131,14 @@ impl FireState {
 
                         while tries > 0 && !should_combust {
                             tries -= 1;
-                            should_combust = rand::random();
+                            should_combust = rand::thread_rng().gen_weighted_bool(7);
                         }
 
                         if should_combust { next.set_cell_fire(i, j) }
                     },
                     Lit { ttl } => {
                         if ttl < 1 {
-                            let glyph = ASH_GLYPHS[rand::random::<usize>() % ASH_GLYPHS.len()];
+                            let glyph = *(rand::thread_rng().choose(ASH_GLYPHS).unwrap());
                             next.features[i][j] = Extinguished { glyph };
                         } else {
                             next.features[i][j] = Lit { ttl: ttl - 1 };
