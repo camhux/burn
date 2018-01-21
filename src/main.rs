@@ -8,6 +8,7 @@ use std::fs;
 use std::io;
 use std::io::prelude::*;
 use std::process;
+use std::time;
 
 use termion::raw::IntoRawMode;
 
@@ -82,12 +83,23 @@ fn try_main() -> Result<()> {
 
             // TODO: yuck. Make this expression nicer, maybe allow composing the compositor into the ui from the get-go
             ui.draw(&compositor.composite(&[&base_layer, &(state.as_layer())]));
+            let mut last_tick = time::Instant::now();
+            let mut state_is_stale = true;
+
+            let frame_wait = time::Duration::from_millis(16);
 
             while !state.is_saturated() {
-                state = state.get_next();
-                ui.draw(&compositor.composite(&[&base_layer, &(state.as_layer())]));
-                // TODO: do this better and configure duration with a more obvious constant
-                std::thread::sleep(std::time::Duration::from_millis(80));
+                if state_is_stale {
+                    state = state.get_next();
+                    state_is_stale = false;
+                }
+
+                let now = time::Instant::now();
+
+                if now.duration_since(last_tick) >= frame_wait {
+                    ui.draw(&compositor.composite(&[&base_layer, &(state.as_layer())]));
+                    state_is_stale = true;
+                }
             }
 
             Ok(())
