@@ -77,7 +77,7 @@ fn try_main() -> Result<()> {
             );
 
             let mut ui = Ui::create(stdout);
-            let mut state = state::FireState::new(term_rows, term_cols);
+            let mut state = state::CombustionState::new(term_rows, term_cols);
 
             state.start_fire();
 

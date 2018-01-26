@@ -66,8 +66,8 @@ impl SmokeState {
     fn gen_smoke_movement(&self, row: usize, col: usize) -> Option<(usize, usize)> {
         let mut rng = rand::thread_rng();
 
-        let row_delta = rng.gen_range::<isize>(-7, -3);
-        let col_delta = rng.gen_range::<isize>(-2, 3);
+        let row_delta = -1;
+        let col_delta = rng.gen_range::<isize>(-1, 1);
 
         let new_row = row as isize + row_delta;
         let new_col = col as isize + col_delta;
@@ -119,7 +119,7 @@ impl SmokeState {
         // spawn new smokebits based on underlying fire layer
         for (i, row) in (&fire_state.features).into_iter().enumerate() {
             for (j, cell) in row.into_iter().enumerate() {
-                match (*cell, rng.gen_weighted_bool(3)) {
+                match (*cell, rng.gen_weighted_bool(10)) {
                     (FireCell::Lit { .. }, true) => next.place_smoke(i, j),
                     _ => {},
                 }

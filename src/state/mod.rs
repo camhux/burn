@@ -27,6 +27,10 @@ impl CombustionState {
         }
     }
 
+    pub fn start_fire(&mut self) {
+        self.fire_state.start_fire();
+    }
+
     pub fn get_next(&self) -> Self {
         let next_fire_state = self.fire_state.get_next();
         let next_smoke_state = self.smoke_state.get_next(&next_fire_state);
@@ -37,6 +41,10 @@ impl CombustionState {
             fire_state: next_fire_state,
             smoke_state: next_smoke_state,
         }
+    }
+
+    pub fn is_saturated(&self) -> bool {
+        self.fire_state.is_saturated()
     }
 
     // TODO: improve when `impl Trait` lands?
