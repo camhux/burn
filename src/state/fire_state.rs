@@ -179,7 +179,7 @@ impl FireState {
 pub struct FireLayer {
     rows: usize,
     cols: usize,
-    features: Vec<Vec<Option<String>>>
+    features: Vec<Vec<Option<String>>>,
 }
 
 impl Layerable for FireLayer {

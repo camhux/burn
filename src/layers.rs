@@ -74,6 +74,35 @@ impl Compositor {
 
         byte_field
     }
+
+    pub fn intermediate_composite(&self, layers: &[&Layerable]) -> IntermediateLayer {
+        let mut field: Vec<Vec<Option<String>>> = vec![vec![None; self.cols]; self.rows];
+
+        for i in 0..self.rows {
+            for j in 0..self.cols {
+                let comped: Option<String> = layers.into_iter().rev().fold(None, |acc, layer| acc.or(layer.get(i, j)));
+                field[i][j] = comped;
+            }
+        }
+
+        IntermediateLayer {
+            rows: self.rows,
+            cols: self.cols,
+            features: field,
+        }
+    }
+}
+
+pub struct IntermediateLayer {
+    rows: usize,
+    cols: usize,
+    features: Vec<Vec<Option<String>>>,
+}
+
+impl Layerable for IntermediateLayer {
+    fn rows(&self) -> usize { self.rows }
+    fn cols(&self) -> usize { self.cols }
+    fn features(&self) -> &Vec<Vec<Option<String>>> { &self.features }
 }
 
 #[cfg(test)]

@@ -27,6 +27,24 @@ enum SmokeCell {
     },
 }
 
+impl From<SmokeCell> for Option<String> {
+    fn from(smoke_cell: SmokeCell) -> Self {
+        use self::SmokeCell::{Clear, Smoky};
+
+        let mut rng = rand::thread_rng();
+
+        match smoke_cell {
+            Clear => None,
+            Smoky { .. } => {
+                let glyph = *(rng.choose(SMOKE_GLYPHS).unwrap());
+                let smoke_color = *(rng.choose(SMOKE_COLORS).unwrap());
+
+                Some(format!("{}{}{}", color::Fg(smoke_color), glyph, color::Fg(color::Reset)))
+            }
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct SmokeState {
     rows: usize,
@@ -109,5 +127,38 @@ impl SmokeState {
         }
 
         next
+    }
+
+    pub fn as_layer(&self) -> SmokeLayer {
+        self.into()
+    }
+}
+
+pub struct SmokeLayer {
+    rows: usize,
+    cols: usize,
+    features: Vec<Vec<Option<String>>>,
+}
+
+impl Layerable for SmokeLayer {
+    fn rows(&self) -> usize { self.rows }
+    fn cols (&self) -> usize { self.cols }
+    fn features(&self) -> &Vec<Vec<Option<String>>> { &self.features }
+}
+
+impl <'a> From<&'a SmokeState> for SmokeLayer {
+    fn from(smoke_state: &'a SmokeState) -> Self {
+        let features: Vec<Vec<Option<String>>> =
+            (&smoke_state.features).into_iter()
+            .map(|row| {
+                row.into_iter().map(|&cell| cell.into()).collect::<Vec<Option<String>>>()
+            })
+            .collect::<Vec<_>>();
+
+        SmokeLayer {
+            features,
+            rows: smoke_state.rows,
+            cols: smoke_state.cols,
+        }
     }
 }
