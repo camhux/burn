@@ -13,10 +13,12 @@ use std::time;
 use termion::raw::IntoRawMode;
 
 mod layers;
+mod border;
 mod state;
 mod ui;
 
 use layers::{BasicLayer, Compositor, Layerable};
+use border::Border;
 use state::{FireState, FireLayer};
 use ui::Ui;
 
@@ -55,6 +57,7 @@ fn try_main() -> Result<()> {
 
     match fs::File::open(filepath) {
         Ok(file) => {
+            // TODO: add max bounds on term width to make it look like a piece of paper
             let (term_cols, term_rows) = termion::terminal_size().expect("could not read terminal size");
             let (term_cols, term_rows) = ((term_cols - 2) as usize, (term_rows - 2) as usize);
 
@@ -78,11 +81,12 @@ fn try_main() -> Result<()> {
 
             let mut ui = Ui::create(stdout);
             let mut state = state::CombustionState::new(term_rows, term_cols);
+            let border = Border::new(term_rows, term_cols);
 
             state.start_fire();
 
             // TODO: yuck. Make this expression nicer, maybe allow composing the compositor into the ui from the get-go
-            ui.draw(&compositor.composite(&[&base_layer, &(state.as_layer())]));
+            ui.draw(&compositor.composite(&[&base_layer, &border, &(state.as_layer())]));
             let mut last_tick = time::Instant::now();
             let mut state_is_stale = true;
 
@@ -97,7 +101,7 @@ fn try_main() -> Result<()> {
                 let now = time::Instant::now();
 
                 if now.duration_since(last_tick) >= frame_wait {
-                    ui.draw(&compositor.composite(&[&base_layer, &(state.as_layer())]));
+                    ui.draw(&compositor.composite(&[&base_layer, &border, &(state.as_layer())]));
                     state_is_stale = true;
                 }
             }
