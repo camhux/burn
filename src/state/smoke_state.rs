@@ -67,7 +67,7 @@ impl SmokeState {
         let mut rng = rand::thread_rng();
 
         let row_delta = -1;
-        let col_delta = rng.gen_range::<isize>(-1, 1);
+        let col_delta = rng.gen_range::<isize>(-1, 2);
 
         let new_row = row as isize + row_delta;
         let new_col = col as isize + col_delta;
