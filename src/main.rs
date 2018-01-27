@@ -90,7 +90,7 @@ fn try_main() -> Result<()> {
             let mut last_tick = time::Instant::now();
             let mut state_is_stale = true;
 
-            let frame_wait = time::Duration::from_millis(16);
+            let frame_wait = time::Duration::from_millis(100);
 
             while !state.is_saturated() {
                 if state_is_stale {
@@ -103,6 +103,7 @@ fn try_main() -> Result<()> {
                 if now.duration_since(last_tick) >= frame_wait {
                     ui.draw(&compositor.composite(&[&base_layer, &border, &(state.as_layer())]));
                     state_is_stale = true;
+                    last_tick = now;
                 }
             }
 
