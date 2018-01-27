@@ -31,7 +31,7 @@ const FIRE_COLORS: &[color::Rgb] = &[
 ];
 
 #[derive(Copy, Clone)]
-enum FireCell {
+pub enum FireCell {
     Unlit,
     Lit { ttl: usize },
     Extinguished { glyph: char },
@@ -80,7 +80,7 @@ impl Neighbors {
 pub struct FireState {
     rows: usize,
     cols: usize,
-    features: Vec<Vec<FireCell>>,
+    pub features: Vec<Vec<FireCell>>, // needs to be public for calculating smoke layer. maybe this can be refined
     n_fires: usize,
     ttl_range: rand::distributions::Range<usize>,
 }
@@ -89,13 +89,13 @@ impl FireState {
     pub fn new(rows: usize, cols: usize) -> Self {
         let features = vec![vec![FireCell::Unlit; cols]; rows];
 
-        return Self {
+        Self {
             rows,
             cols,
             features,
             n_fires: 0,
             ttl_range: rand::distributions::Range::new(3, 26),
-        };
+        }
     }
 
     fn set_cell_fire(&mut self, row: usize, col: usize) {
@@ -179,7 +179,7 @@ impl FireState {
 pub struct FireLayer {
     rows: usize,
     cols: usize,
-    features: Vec<Vec<Option<String>>>
+    features: Vec<Vec<Option<String>>>,
 }
 
 impl Layerable for FireLayer {
