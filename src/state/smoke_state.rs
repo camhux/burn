@@ -66,7 +66,7 @@ impl SmokeState {
     fn gen_smoke_movement(&self, row: usize, col: usize) -> Option<(usize, usize)> {
         let mut rng = rand::thread_rng();
 
-        let row_delta = -1;
+        let row_delta = rng.gen_range::<isize>(-8, 0);
         let col_delta = rng.gen_range::<isize>(-1, 2);
 
         let new_row = row as isize + row_delta;
